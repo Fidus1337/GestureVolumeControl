@@ -1,8 +1,6 @@
 import cv2
 import mediapipe as mp
-import time
 
-# Class for detecting and tracking hands using MediaPipe
 class HandsDetector():
     def __init__(self, static_image_mode=False,
                  max_num_hands=2,
@@ -10,45 +8,36 @@ class HandsDetector():
                  min_detection_confidence=0.5,
                  min_tracking_confidence=0.5):
 
-        # Load MediaPipe Hands module
         self.mpHands = mp.solutions.hands
-
-        # Initialize the hand detection model with given parameters
         self.hands_detector = self.mpHands.Hands(
-            static_image_mode=static_image_mode,       # If True, treats input as a batch of static images
-            max_num_hands=max_num_hands,               # Maximum number of hands to detect
-            model_complexity=model_complexity,         # Complexity of the hand landmark model (0 or 1)
-            min_detection_confidence=min_detection_confidence,   # Minimum confidence for initial hand detection
-            min_tracking_confidence=min_tracking_confidence      # Minimum confidence for tracking landmarks
+            static_image_mode=static_image_mode,
+            max_num_hands=max_num_hands,
+            model_complexity=model_complexity,
+            min_detection_confidence=min_detection_confidence,
+            min_tracking_confidence=min_tracking_confidence
         )
-
-        # Drawing utility for drawing hand landmarks and connections
         self.mpDraw = mp.solutions.drawing_utils
+        self.results = None
 
-    # Method to detect hands and optionally draw landmarks on the image
     def detect_hands(self, img, draw_hands=True):
-        # Convert the image to RGB format as required by MediaPipe
         img_RGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        self.results = self.hands_detector.process(img_RGB)  # Process the image and detect hands
+        self.results = self.hands_detector.process(img_RGB)
 
-        # If drawing is enabled and hands are detected
         if draw_hands and self.results.multi_hand_landmarks:
             for handLms in self.results.multi_hand_landmarks:
-                # Draw landmarks and connections on the image
                 self.mpDraw.draw_landmarks(img, handLms, self.mpHands.HAND_CONNECTIONS)
         return img
 
-    # Method to extract the (x, y) positions of landmarks for one hand
     def findPositions(self, img, handNumber=0):
-        lm_list = []  # List to store landmark ID and coordinates
-        if self.results.multi_hand_landmarks:
-            hand = self.results.multi_hand_landmarks[handNumber]  # Select the specified hand
-            for id, lm in enumerate(hand.landmark):
-                h, w, c = img.shape  # Get image dimensions
-                cx, cy = int(lm.x * w), int(lm.y * h)  # Convert normalized coordinates to pixels
-                lm_list.append([id, cx, cy])  # Store landmark ID and coordinates
+        lm_list = []
+        if self.results and self.results.multi_hand_landmarks:
+            if handNumber < len(self.results.multi_hand_landmarks):
+                hand = self.results.multi_hand_landmarks[handNumber]
+                for id, lm in enumerate(hand.landmark):
+                    h, w, _ = img.shape
+                    cx, cy = int(lm.x * w), int(lm.y * h)
+                    lm_list.append([id, cx, cy])
         return lm_list
-
 
 # Testing the module
 def main():
