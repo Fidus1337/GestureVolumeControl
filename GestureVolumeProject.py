@@ -3,6 +3,16 @@ import time
 import math
 from HandDetector_module import HandsDetector
 
+# Modules for changing the volume of computer
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from ctypes import cast, POINTER
+from comtypes import CLSCTX_ALL
+
+# Setting up settings for sound
+devices = AudioUtilities.GetSpeakers()
+interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+volume = cast(interface, POINTER(IAudioEndpointVolume))
+
 cap = cv2.VideoCapture(0)
 wCam, hCam = 640, 480
 cap.set(3, wCam)
@@ -66,6 +76,10 @@ while True:
         norm_distance = (dist_4_8/max_distance_calibrated) * 100
         norm_distance-=10
         norm_distance = max(0, min(100, norm_distance))  # Ограничиваем
+        
+        # Set volume
+        sound_volume = norm_distance / 100.0
+        volume.SetMasterVolumeLevelScalar(sound_volume, None)
 
         # Цвет круга меняется от красного (<20%) до зелёного
         color = (0, 0, 255) if norm_distance < 20 else (0, 255, 0)
